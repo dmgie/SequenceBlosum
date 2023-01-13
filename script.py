@@ -90,6 +90,8 @@ def logOdds(sequences):
     for sequence in sequences.values():
         for i in range(len(sequence.sequence) - 1):
             aaPair = sequence.sequence[i:i + 2]
+            # Turn pair into a tuple
+            aaPair = tuple(aaPair)
             if aaPair not in aaPairCount:
                 aaPairCount[aaPair] = 0
             aaPairCount[aaPair] += 1
@@ -99,46 +101,37 @@ def logOdds(sequences):
         logOddsRatio[aaPair] = math.log((aaPairCount[aaPair] / (aaCount[aaPair[0]] * aaCount[aaPair[1]])))
 
 
-    print(logOddsRatio)
     return logOddsRatio
     # For each pair of possible amino acids
     # - Calculate the joint probability of these occuring between different sequences
 
 
 
-# Print log odds ratio between each pair of amino acids as a matrix
+# Print the log odds ratio between every amino acid in a nice matrix
 def printLogOddsRatio(logOddsRatio):
-    # Get the list of amino acids
-    aminoAcids = []
+    # Get the list of amino acids contained from our fasta files
+    aaList = []
     for pair in logOddsRatio:
-        if pair[0] not in aminoAcids:
-            aminoAcids.append(pair[0])
-        if pair[1] not in aminoAcids:
-            aminoAcids.append(pair[1])
-    # Sort the list of amino amino 
-    aminoAcids.sort()
-
-    # Print the header 
+        if pair[0] not in aaList:
+            aaList.append(pair[0])
+        if pair[1] not in aaList:
+            aaList.append(pair[1])
+    # Print the header
     print(' ', end = '')
-    for aa in aminoAcids:
-        print(aa, end = ' ')
+    for aa in aaList:
+        print('\t', aa, end = '')
     print()
-
-
-    # Print the log odds ratio for each pair of amino amino acids 
-    for aa1 in aminoAcids:
-        for aa2 in aminoAcids:
-            if aa1+aa2 in logOddsRatio:
-                print(logOddsRatio[aa1+aa2], end = ' ')
+    # Print the matrix
+    for aa1 in aaList:
+        print(aa1, end = '')
+        for aa2 in aaList:
+            # If the pair is in the dictionary, print the log odds ratio
+            if (aa1, aa2) in logOddsRatio:
+                print('\t', logOddsRatio[(aa1, aa2)], end = '')
             else:
-                print(0, end = ' ')
-
-
-
-    # Old function
-    # for aa1 in 'ACDEFGHIKLMNPQRSTVWY':
-    #     for aa2 in 'ACDEFGHIKLMNPQRSTVWY':
-    #         print(logOddsRatio[(aa1, aa2)], end = '\t')
+                print('\t', 0, end = '')
+            # If the pair is not in the dictionary, print 0
+        print()
 
 
 
