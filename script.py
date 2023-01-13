@@ -22,11 +22,10 @@ class Sequence:
 
 # FASTA reader that tracks sequence as Sequence objects
 def readFASTA(filename):
-    # Read the file 
+    # Create a dictionary to store the sequences
     sequences = {}
     with open(filename, 'r') as f:
         lines = f.readlines()
-        # Create a dictionary to store the sequences
         # Loop through the lines
         for line in lines:
             # If the line is a header, create a new sequence object
@@ -39,72 +38,50 @@ def readFASTA(filename):
     print('Read', len(sequences), 'sequences')
     return sequences
 
-
-# Create a function that calculates the log odds ratio for each pair of amino acids
-# It is the join probability divided by the probability of each letter
-def calculateLogOddsRatio(sequences):
-    # Create a dictionary to store the log odds ratio
-    logOddsRatio = {}
-    # Loop through the sequences
-    for sequence in sequences.values():
-        # Loop through the sequence
-        for i in range(len(sequence.sequence) - 1):
-            # Get the current and next amino acids
-            currentAA = sequence.sequence[i]
-            nextAA = sequence.sequence[i + 1]
-            # If the current and next amino acids are not in the dictionary, add them
-            if (currentAA, nextAA) not in logOddsRatio:
-                logOddsRatio[(currentAA, nextAA)] = 0
-            # Increment the log odds ratio for the current and next amino acids
-            logOddsRatio[(currentAA, nextAA)] += 1
-    # Calculate the log odds ratio for each pair of amino acids
-    for pair in logOddsRatio:
-        # Get the number of times the current and next amino acids appear together
-        currentNextAA = logOddsRatio[pair]
-        # Get the number of times the current amino acid appears
-        currentAA = 0
-        for pair2 in logOddsRatio:
-            if pair2[0] == pair[0]:
-                currentAA += logOddsRatio[pair2]
-        # Get the number of times the next amino acid appears
-        nextAA = 0
-        for pair2 in logOddsRatio:
-            if pair2[1] == pair[1]:
-                nextAA += logOddsRatio[pair2]
-        # Calculate log odds ratio
-        logOddsRatio[pair] = math.log((currentNextAA / (currentAA * nextAA)) + 1)
-    return logOddsRatio
-
-
-# Another way to do it
-def logOdds(sequences):
-    # Count occurence of each amino acid 
+# Calculate log odds ratio
+def calcLogOdds(sequences):
+    # Get counts of each amino acid across all sequences 
     aaCount = {}
     for sequence in sequences.values():
         for aa in sequence.sequence:
             if aa not in aaCount:
                 aaCount[aa] = 0
-            aaCount[aa] += 1 
-    # Count occurence of each pair of amino acids occuring together in different sequences
-    aaPairCount = {}
-    for sequence in sequences.values():
-        for i in range(len(sequence.sequence) - 1):
-            aaPair = sequence.sequence[i:i + 2]
-            # Turn pair into a tuple
-            aaPair = tuple(aaPair)
-            if aaPair not in aaPairCount:
-                aaPairCount[aaPair] = 0
-            aaPairCount[aaPair] += 1
+            aaCount[aa] += 1
+
+    # Get the length of the aligned sequences by looking at the first sequence 
+    seqLength = len(list(sequences.values())[0].sequence)
+
+
+    # 
+    sequenceList = sequences.values()
+
+    ### Calculating the "joint probability" of each pair of amino acids
+    # Loop through each position in the sequence 
+    pairCount = {}
+    for i in range(seqLength):
+        # Between each pair of sequences, count the number of times each pair of amino acids occurs
+        for seq1 in sequenceList:
+            for seq2 in sequenceList:
+                # Make sure we're not comparing the same sequence 
+                if seq1 != seq2:
+                    # Get the pair of amino acids at this position between the two sequences
+                    pair = (seq1.sequence[i], seq2.sequence[i])
+                    # If the pair is not in the dictionary, add it
+                    if pair not in pairCount:
+                        pairCount[pair] = 0
+                    # Increment the count for this pair
+                    pairCount[pair] += 1
+
     # Calculate log odds ratio 
     logOddsRatio = {}
-    for aaPair in aaPairCount:
-        logOddsRatio[aaPair] = math.log((aaPairCount[aaPair] / (aaCount[aaPair[0]] * aaCount[aaPair[1]])))
+
+    for pair in pairCount:
+        # Calculate the log odds ratio = log (P(A,B) / (P(A) * P(B)))
+        logOddsRatio[pair] = math.log(pairCount[pair] / (aaCount[pair[0]] * aaCount[pair[1]]))
 
 
+    # print(logOddsRatio)
     return logOddsRatio
-    # For each pair of possible amino acids
-    # - Calculate the joint probability of these occuring between different sequences
-
 
 
 # Print the log odds ratio between every amino acid in a nice matrix
@@ -140,7 +117,7 @@ def main():
     # Read the FASTA file 
     sequences = readFASTA(args.filename)
     # Calculate the log odds ratio for each pair of amino acids
-    logOddsRatio = logOdds(sequences)
+    logOddsRatio = calcLogOdds(sequences)
     # Print log odds ratio between each pair of amino acids as a matrix
     printLogOddsRatio(logOddsRatio)
 
