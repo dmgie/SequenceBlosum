@@ -1,0 +1,9 @@
+How do we use it for comparison:
+- use it in aligners such as MUSCLE, T-COFEE, CLUSTALW
+- use it in BLASTX for better search
+
+
+What do we compare?
+- Subjectively the alignment itself
+- Clustering the data maybe
+

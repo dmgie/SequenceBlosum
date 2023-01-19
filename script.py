@@ -5,7 +5,8 @@ import math
 from itertools import combinations
 
 parser = argparse.ArgumentParser(description = 'Calculate the log odds ratio for each pair of amino acids')
-parser.add_argument('filename', help = 'FASTA file with multiple sequences')
+parser.add_argument('filename', help = 'FASTA file')
+parser.add_argument('temp-scale', help = 'Whether to enable the temperature scale', action = 'store_false')
 args = parser.parse_args()
 
 # Simple sequence class
@@ -112,6 +113,7 @@ def printLogOddsRatio(logOddsRatio):
             aaList.append(pair[0])
         if pair[1] not in aaList:
             aaList.append(pair[1])
+    aaList.sort()
     # Print the header
     print(' ', end = '')
     for aa in aaList:
@@ -121,7 +123,7 @@ def printLogOddsRatio(logOddsRatio):
     for aa1 in aaList:
         print(aa1, end = '')
         for aa2 in aaList:
-            # If the pair is in the dictionary, print the log odds ratio, max 3 decimal places
+            # If the pair is in the dictionary, print the log odds ratio, rounded to an int
             if (aa1, aa2) in logOddsRatio:
                 print('\t', int(round(logOddsRatio[(aa1, aa2)], 0)), end = '')
             else:
@@ -133,11 +135,8 @@ def printLogOddsRatio(logOddsRatio):
 
 # Main function
 def main():
-    # Read the FASTA file 
     sequences = readFASTA(args.filename)
-    # Calculate the log odds ratio for each pair of amino acids
     logOddsRatio = calcLogOdds(sequences)
-    # Print log odds ratio between each pair of amino acids as a matrix
     printLogOddsRatio(logOddsRatio)
 
 if __name__ == '__main__':
