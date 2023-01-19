@@ -37,7 +37,7 @@ def readFASTA(filename):
             # If the line is a sequence, add it to the current sequence object
             else:
                 sequences[header].sequence += line.strip()
-    print('Read', len(sequences), 'sequences')
+    # print('Read', len(sequences), 'sequences')
     return sequences
 
 # Calculate log odds ratio
@@ -97,7 +97,8 @@ def calcLogOdds(sequences):
             expectedFreq = aaFreq[aa1] * aaFreq[aa2]
         else:
             expectedFreq = 2 * aaFreq[aa1] * aaFreq[aa2]
-        logOddsRatio = 2 * math.log(pairFreq[pair] / (expectedFreq),2) 
+        # logOddsRatio = 2 * math.log(pairFreq[pair] / (expectedFreq),2) 
+        logOddsRatio = 2 * math.log(pairFreq[pair] / (expectedFreq)) 
         logOddsRatios[pair] = logOddsRatio
 
     # print(logOddsRatio)
@@ -119,9 +120,12 @@ def printLogOddsRatio(logOddsRatio):
     for aa in aaList:
         print('\t', aa, end = '')
     print()
-    # Print the matrix
+    # Print the matrix in a tabular format
     for aa1 in aaList:
-        print(aa1, end = '')
+        if aa1 == '-':
+            print('*', end = '')
+        else:
+            print(aa1, end = '')
         for aa2 in aaList:
             # If the pair is in the dictionary, print the log odds ratio, rounded to an int
             if (aa1, aa2) in logOddsRatio:

@@ -3,6 +3,10 @@ How do we use it for comparison:
 - use it in BLASTX for better search
 
 
+Create a file that contains all the sequences
+- Align it using each of the different substituion matrices
+- Create a tree out of it via NJ or UPGMA
+
 What do we compare?
 - Subjectively the alignment itself
 - Clustering the data maybe
