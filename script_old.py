@@ -2,7 +2,6 @@
 
 import argparse
 import math
-from itertools import combinations
 
 parser = argparse.ArgumentParser(description = 'Calculate the log odds ratio for each pair of amino acids')
 parser.add_argument('filename', help = 'FASTA file with multiple sequences')
@@ -48,56 +47,42 @@ def calcLogOdds(sequences):
     # Sequences as list
     sequenceList = sequences.values()
 
-    ### Joint probability of amino acids pairs and counts of each amino acids
-    aaCount = {}
+    ### Calculating the "joint probability" of each pair of amino acids
+    # Loop through each position in the sequence 
     pairCount = {}
     for i in range(seqLength):
-        for seq in sequenceList:
-            aa = seq.sequence[i]
-            if aa not in aaCount:
-                aaCount[aa] = 0
-            aaCount[aa] += 1
-        # Go through each pair of sequences and count pairs occurence
-        for seq1, seq2 in combinations(sequenceList, 2):
-            # Count the pairs
-            aa1 = seq1.sequence[i]
-            aa2 = seq2.sequence[i]
-            pair = (aa1, aa2)
-            pair = tuple(sorted(pair))
-            if pair not in pairCount:
-                pairCount[pair] = 0
-            pairCount[pair] += 1
+        # Between each pair of non-same sequences, count the number of times each pair of amino acids occurs
+        for seq1 in sequenceList:
+            for seq2 in sequenceList:
+                if seq1 != seq2:
+                    # Keep track of count of the (sorted)pair of amino acids in dictionary, 
+                    pair = (seq1.sequence[i], seq2.sequence[i])
+                    pair = tuple(sorted(pair))
+                    if pair not in pairCount:
+                        pairCount[pair] = 0
+                    pairCount[pair] += 1
 
-    
-    totalAAs = sum(aaCount.values())
-    aaFreq = {}
-    for aa in aaCount:
-        aaFreq[aa] = aaCount[aa] / totalAAs
-    
-    # Calculate total number of posible pairs => len * n(n-1)/2 (or rather n choose 2)
-    # Normalise frequency of each pair of amino acids i.e (num. seq choose 2) = observed frequency
-    totalPairs = seqLength * len(sequenceList) * (len(sequenceList) - 1) / 2
+
+    # Calculate total number of posible pairs, used later
+    totalPairs = len(sequenceList) * (len(sequenceList) - 1) / 2
+
+    # Normalise frequency of each pair of amino acids i.e (num. seq choose 2) 
     pairFreq = {}
     for pair in pairCount:
         pairFreq[pair] = pairCount[pair] / totalPairs
-
-    # print('AA count:', aaCount)
-    # print('AA freq:', aaFreq)
-    # print('Pair count:', pairCount)
-    # print('Pair freq:', pairFreq)
+    
+    print('Pair count:', pairCount)
 
     logOddsRatios = {}
-    # Calculate log odds ratio for each pair of amino acids
+
+    # Get probability of occurence of each amino acid in the pairs 
+    aaFreq = {}
     for pair in pairFreq:
-        aa1 = pair[0]
-        aa2 = pair[1]
-        expectedFreq = 0
-        if aa1 == aa2:
-            expectedFreq = aaFreq[aa1] * aaFreq[aa2]
-        else:
-            expectedFreq = 2 * aaFreq[aa1] * aaFreq[aa2]
-        logOddsRatio = 2 * math.log(pairFreq[pair] / (expectedFreq),2) 
-        logOddsRatios[pair] = logOddsRatio
+        for aa in pair:
+            if aa not in aaFreq:
+                aaFreq[aa] = 0
+            aaFreq[aa] += pairFreq[pair]
+
 
     # print(logOddsRatio)
     return logOddsRatios
@@ -121,9 +106,9 @@ def printLogOddsRatio(logOddsRatio):
     for aa1 in aaList:
         print(aa1, end = '')
         for aa2 in aaList:
-            # If the pair is in the dictionary, print the log odds ratio, max 3 decimal places
+            # If the pair is in the dictionary, print the log odds ratio
             if (aa1, aa2) in logOddsRatio:
-                print('\t', int(round(logOddsRatio[(aa1, aa2)], 0)), end = '')
+                print('\t', logOddsRatio[(aa1, aa2)], end = '')
             else:
                 print('\t', 0, end = '')
             # If the pair is not in the dictionary, print 0
