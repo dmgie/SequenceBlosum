@@ -6,14 +6,18 @@ from itertools import combinations
 
 parser = argparse.ArgumentParser(description = 'Calculate the log odds ratio for each pair of amino acids')
 parser.add_argument('filename', help = 'FASTA file')
-parser.add_argument('temp-scale', help = 'Whether to enable the temperature scale', action = 'store_false')
+parser.add_argument('-t','--temp-scale', help = 'Whether to enable the temperature scale', action = 'store_true')
 args = parser.parse_args()
 
 # Simple sequence class
 class Sequence:
-    def __init__(self, header, sequence):
+    """
+    A simple sequence class that can be used to store a sequence and its header, as well as the optimum temperature for that organism
+    """
+    def __init__(self, header, sequence, temp_scale):
         self.header = header
         self.sequence = sequence
+        self.temp = temp_scale
 
     def getHeader(self):
         return self.header
@@ -33,15 +37,47 @@ def readFASTA(filename):
             # If the line is a header, create a new sequence object
             if line[0] == '>':
                 header = line[1:].strip()
-                sequences[header] = Sequence(header, '')
+                # number at the end of the header is the temperature
+                if args.temp_scale:
+                    temp = int(header.split()[-1])
+                    header = header.split()[0]
+                else:
+                    temp = 0
+                sequences[header] = Sequence(header, '', temp)
             # If the line is a sequence, add it to the current sequence object
             else:
                 sequences[header].sequence += line.strip()
     # print('Read', len(sequences), 'sequences')
     return sequences
 
+
+def calculateTempScaling(sequences):
+    """
+    Given a dictionary of sequences, calculate the temperature scaling factor for the set of sequences 
+    Input: dictionary of Sequence objects
+    Output: temperature scaling factor
+    """
+    # Get all the temperatures from the sequences 
+    seqTemps = []
+    for seq in sequences.values():
+        seqTemps.append(seq.temp)
+
+    # Calculate the variance of the temperatures
+    meanTemp = sum(seqTemps) / len(seqTemps)
+    variance = 0
+    for temp in seqTemps:
+        variance += (temp - meanTemp) ** 2 
+    variance /= len(seqTemps)
+
+    return variance
+
 # Calculate log odds ratio
 def calcLogOdds(sequences):
+    """
+    Calculate the log odds ratio according to the BLOSUM matrix formula from (Heinkoff and Henikoff (1992))
+    Input: dictionary of Sequence objects
+    Output: dictionary of log odds ratios
+    """
     # Get the length of the aligned sequences by looking at the first sequence 
     seqLength = len(list(sequences.values())[0].sequence)
 
@@ -53,6 +89,7 @@ def calcLogOdds(sequences):
     aaCount = {}
     pairCount = {}
     for i in range(seqLength):
+        # Count number of occurences of each amino acids
         for seq in sequenceList:
             aa = seq.sequence[i]
             if aa not in aaCount:
@@ -82,11 +119,6 @@ def calcLogOdds(sequences):
     for pair in pairCount:
         pairFreq[pair] = pairCount[pair] / totalPairs
 
-    # print('AA count:', aaCount)
-    # print('AA freq:', aaFreq)
-    # print('Pair count:', pairCount)
-    # print('Pair freq:', pairFreq)
-
     logOddsRatios = {}
     # Calculate log odds ratio for each pair of amino acids
     for pair in pairFreq:
@@ -98,6 +130,7 @@ def calcLogOdds(sequences):
         else:
             expectedFreq = 2 * aaFreq[aa1] * aaFreq[aa2]
         # logOddsRatio = 2 * math.log(pairFreq[pair] / (expectedFreq),2) 
+        # TODO: Replace 2 with a scaling factor
         logOddsRatio = 2 * math.log(pairFreq[pair] / (expectedFreq)) 
         logOddsRatios[pair] = logOddsRatio
 
@@ -107,6 +140,11 @@ def calcLogOdds(sequences):
 
 # Print the log odds ratio between every amino acid in a nice matrix
 def printLogOddsRatio(logOddsRatio):
+    """
+    Pretty print the substitution matrix in a nice format to the terminal, for easy piping to a file 
+    Input: dictionary of log odds logOddsRatio 
+    Output: None (prints to terminal)
+    """
     # Get the list of amino acids contained from our fasta files
     aaList = []
     for pair in logOddsRatio:
@@ -132,7 +170,6 @@ def printLogOddsRatio(logOddsRatio):
                 print('\t', int(round(logOddsRatio[(aa1, aa2)], 0)), end = '')
             else:
                 print('\t', 0, end = '')
-            # If the pair is not in the dictionary, print 0
         print()
 
 
@@ -141,6 +178,7 @@ def printLogOddsRatio(logOddsRatio):
 def main():
     sequences = readFASTA(args.filename)
     logOddsRatio = calcLogOdds(sequences)
+    # print(calculateTempScaling(sequences))
     printLogOddsRatio(logOddsRatio)
 
 if __name__ == '__main__':
