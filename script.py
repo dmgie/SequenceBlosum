@@ -107,6 +107,7 @@ def calcLogOdds(sequences):
             pairCount[pair] += 1
 
     
+    print(aaCount)
     totalAAs = sum(aaCount.values())
     aaFreq = {}
     for aa in aaCount:
