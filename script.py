@@ -161,6 +161,7 @@ def printLogOddsRatio(logOddsRatio):
     print()
     # Print the matrix in a tabular format
     for aa1 in aaList:
+        print(aa1, end = '')
         for aa2 in aaList:
             # If the pair is in the dictionary, print the log odds ratio, rounded to an int
             if (aa1, aa2) in logOddsRatio:
